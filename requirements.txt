@@ -1,0 +1,8 @@
+Flask
+torch
+transformers        # For HuggingFace models
+datasets            # Often needed for specific HuggingFace model features or tokenizers
+soundfile           # For reading/writing audio files
+librosa             # For audio processing (like resampling)
+pyaudio             # If you want to test microphone input directly in Python (optional for this app)
+sentencepiece       # text tokenizer

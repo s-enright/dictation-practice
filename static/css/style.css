@@ -1,0 +1,12 @@
+/* static/css/style.css */
+body {
+    font-family: sans-serif; /* Example: Change default font */
+}
+
+/* You can add custom styles here to override Bootstrap or add new ones */
+.card-header {
+    font-weight: bold;
+}
+
+/* Animation for recording button added directly in HTML style tag for simplicity,
+   but could be moved here. */
