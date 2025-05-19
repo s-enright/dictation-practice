@@ -46,12 +46,12 @@ current_sentence_index = 0
 # --- Flask Routes ---
 @app.route('/')
 def index():
-    '''Serves the main HTML page.'''
+    """Serves the main HTML page."""
     return render_template('index.html')
 
 @app.route('/get_sentence', methods=['GET'])
 def get_sentence():
-    '''Provides a new dictation sentence to the frontend.'''
+    """Provides a new dictation sentence to the frontend."""
     global current_sentence_index
     sentence = sentences[current_sentence_index % len(sentences)]
     current_sentence_index += 1
@@ -59,10 +59,10 @@ def get_sentence():
 
 @app.route('/process_audio', methods=['POST'])
 def process_audio():
-    '''
+    """
     Receives audio data from the frontend, performs ASR, 
     and returns the transcribed text.
-    '''
+    """
     if 'audio_data' not in request.files:
         return jsonify({'error': 'No audio file provided'}), 400
 
@@ -92,10 +92,10 @@ def process_audio():
 
 @app.route('/synthesize_speech', methods=['POST'])
 def synthesize_speech():
-    '''
+    """
     Receives text, synthesizes speech, saves it as a temporary WAV file,
     and returns the URL to that file.
-    '''
+    """
     data = request.get_json()
     text_to_speak = data.get('text')
 
