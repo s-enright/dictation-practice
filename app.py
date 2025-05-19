@@ -1,4 +1,5 @@
 from pathlib import Path
+import sys
 import uuid # For unique filenames
 from datasets import load_dataset
 from flask import Flask, render_template, request, jsonify
@@ -8,6 +9,8 @@ import soundfile # For saving audio
 import librosa # For audio processing
 
 
+if sys.version_info[0:2] != (3, 12):
+    raise Exception('Requires Python 3.12')
 app = Flask(__name__)
 
 # Temporary directory to hold TTS audio files
@@ -121,8 +124,9 @@ def synthesize_speech():
         soundfile.write(output_path, speech.cpu().numpy(), samplerate=16000) 
         
         # Construct the URL for the frontend to fetch the audio
-        audio_url = Path('static', 'temp_audio', output_filename)
+        audio_url = str(Path('static', 'temp_audio', output_filename))
         return jsonify({'audio_url': audio_url})
+        # TODO: clean up files in finally clause
     except Exception as e:
         print(f'Error synthesizing speech: {e}')
         return jsonify({'error': str(e)}), 500
