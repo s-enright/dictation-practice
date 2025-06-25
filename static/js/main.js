@@ -1,17 +1,17 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- DOM Element References ---
-    const sentenceToDictateEl = document.getElementById('sentenceToDictate');
-    const newSentenceBtn = document.getElementById('newSentenceBtn');
-    const recordBtn = document.getElementById('recordBtn');
-    const recordingStatusEl = document.getElementById('recordingStatus');
+    const sentenceToDictateEl   = document.getElementById('sentenceToDictate');
+    const newSentenceBtn        = document.getElementById('newSentenceBtn');
+    const recordBtn             = document.getElementById('recordBtn');
+    const recordingStatusEl     = document.getElementById('recordingStatus');
     const transcriptionOutputEl = document.getElementById('transcriptionOutput');
-    const playCorrectBtn = document.getElementById('playCorrectBtn');
-    const audioPlayerEl = document.getElementById('audioPlayer');
+    const playCorrectBtn        = document.getElementById('playCorrectBtn');
+    const audioPlayerEl         = document.getElementById('audioPlayer');
 
     // --- State Variables ---
     let mediaRecorder;
     let audioChunks = [];
-    let currentSentence = ""; // Store the current sentence for TTS
+    let currentSentence = "";
 
     // --- Event Listeners ---
     newSentenceBtn.addEventListener('click', fetchNewSentence);
@@ -19,12 +19,17 @@ document.addEventListener('DOMContentLoaded', () => {
     playCorrectBtn.addEventListener('click', playCorrectPronunciation);
 
     // --- Core Functions ---
-
+    /**
+     * Gets a new sentence string from the get_sentence Flask endpoint and displays it,
+     * clearing previous transcription data in the process.
+     * @returns {Promise<void>}
+     */
     async function fetchNewSentence() {
         try {
             const response = await fetch('/get_sentence'); // Calls the Flask endpoint
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                console.log(`HTTP error! Status: ${response.status}`);
+                return;
             }
             const data = await response.json();
             currentSentence = data.sentence;
@@ -73,8 +78,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             body: formData
                         });
                         if (!response.ok) {
-                            const errorData = await response.json();
-                            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+                            console.log(`HTTP error! Status: ${response.status}`);
+                            return;
                         }
                         const data = await response.json();
                         transcriptionOutputEl.value = data.transcription;
@@ -119,8 +124,8 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+                console.log(`HTTP error! Status: ${response.status}`);
+                return;
             }
             const data = await response.json();
             audioPlayerEl.src = data.audio_url; // Flask serves this from static/temp_audio
