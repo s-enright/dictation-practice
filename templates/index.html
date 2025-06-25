@@ -23,10 +23,27 @@
 <body>
     <div class="container mt-5">
         <header class="text-center mb-4">
-            <h1>English Dictation Practice</h1>
+            <h1>Dictation Practice</h1>
         </header>
 
         <main>
+            <div class="card mb-4">
+                <div class="card-header">
+                    Language Selection
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="/dropdown">
+                        <select name="colour">
+                            <option value="{{colours[0]}}" selected>{{colours[0]}}</option>
+                            {% for colour in colours[1:] %}
+                            <option value="{{colour}}">{{colour}}</option>
+                            {% endfor %}
+                        </select>
+                        <input type="submit" value ="Submit">
+                    </form>
+
+                </div>
+            </div>
             <div class="card mb-4">
                 <div class="card-header">
                     Sentence to Dictate

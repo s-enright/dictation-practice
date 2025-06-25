@@ -2,7 +2,7 @@ from pathlib import Path
 import sys
 import uuid # For unique filenames
 from datasets import load_dataset
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, redirect
 import torch # PyTorch, for HuggingFace models
 from transformers import pipeline, SpeechT5Processor, SpeechT5ForTextToSpeech, SpeechT5HifiGan
 import soundfile # For saving audio
@@ -50,7 +50,7 @@ current_sentence_index = 0
 @app.route('/')
 def index():
     """Serves the main HTML page."""
-    return render_template('index.html')
+    return render_template('index.html', colours=['red', 'blue'])
 
 @app.route('/get_sentence', methods=['GET'])
 def get_sentence():
@@ -131,6 +131,17 @@ def synthesize_speech():
         print(f'Error synthesizing speech: {e}')
         return jsonify({'error': str(e)}), 500
 
+@app.route('/', methods=['GET'])
+def dropdown():
+    colours = ['SBI', 'Kotak', 'Citi', 'AMEX', 'BOB', 'AXIS', 'HDFC', 'IDBI', 'YES', 'IndusInd']
+    return render_template('feba.html', colours=colours)
+
+
+@app.route('/dropdown', methods = ['POST'])
+def dropp():
+    dropdownval = request.form.get('colour')
+    print(dropdownval)
+    return redirect("/", code=302)
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
