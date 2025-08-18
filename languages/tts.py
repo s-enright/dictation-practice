@@ -42,16 +42,7 @@ class TtsManager:
 
         if not onnx_path.exists() or not json_path.exists():
             raise FileNotFoundError(f"Model files for {model_name} not found. Ensure they are downloaded.")
-        
-        # Check for and fix a BOM (Byte Order Mark) in the JSON file, which can cause parsing errors.
-        with open(json_path, 'rb') as f:
-            content_bytes = f.read()
-        if content_bytes.startswith(b'\xef\xbb\xbf'):
-            print(f"BOM detected in {json_path}. Rewriting file to remove it...")
-            text = content_bytes.decode('utf-8-sig')
-            with open(json_path, 'w', encoding='utf-8') as f:
-                f.write(text)
-
+            
         use_cuda = self.device.startswith('cuda')
         return PiperVoice.load(str(onnx_path), config_path=str(json_path), use_cuda=use_cuda)
 
