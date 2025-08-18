@@ -75,6 +75,7 @@ class TtsManager:
 
     def synthesize(self, text: str, lang_code: str) -> str:
         """Synthesizes speech and returns the URL to the audio file."""
+        print(f"Synthesizing speech for '{text}'...")
         if lang_code not in self.models:
             self.load_voice(lang_code)
 
@@ -83,9 +84,14 @@ class TtsManager:
         
         if self.tts_engine == 'piper':
             voice = self.models[lang_code]
+            
             with wave.open(str(output_path), 'wb') as wav_file:
-                voice.synthesize(text, wav_file)
-        
+                wav_file.setnchannels(1)
+                wav_file.setsampwidth(2)
+                wav_file.setframerate(voice.config.sample_rate)
+                for audio_chunk in voice.synthesize(text):
+                    wav_file.writeframes(audio_chunk.audio_int16_bytes)
+
         elif self.tts_engine == 'mms':
             mms_model = self.models[lang_code]
             inputs = mms_model['tokenizer'](text, return_tensors='pt').to(self.device)
