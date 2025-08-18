@@ -32,16 +32,14 @@
                     Language Selection
                 </div>
                 <div class="card-body">
-                    <form method="POST" action="/dropdown">
-                        <select name="colour">
-                            <option value="{{colours[0]}}" selected>{{colours[0]}}</option>
-                            {% for colour in colours[1:] %}
-                            <option value="{{colour}}">{{colour}}</option>
+                    <div class="input-group">
+                        <select id="languageSelector" class="form-select">
+                            {% for lang in languages %}
+                            <option value="{{ lang }}">{{ lang.upper() }}</option>
                             {% endfor %}
                         </select>
-                        <input type="submit" value ="Submit">
-                    </form>
-
+                        <button id="setLanguageBtn" class="btn btn-secondary">Set Language</button>
+                    </div>
                 </div>
             </div>
             <div class="card mb-4">

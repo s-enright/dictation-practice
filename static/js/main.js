@@ -7,6 +7,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const transcriptionOutputEl = document.getElementById('transcriptionOutput');
     const playCorrectBtn        = document.getElementById('playCorrectBtn');
     const audioPlayerEl         = document.getElementById('audioPlayer');
+    const languageSelectorEl    = document.getElementById('languageSelector');
+    const setLanguageBtn        = document.getElementById('setLanguageBtn');
 
     // --- State Variables ---
     let mediaRecorder;
@@ -17,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
     newSentenceBtn.addEventListener('click', fetchNewSentence);
     recordBtn.addEventListener('click', toggleRecording);
     playCorrectBtn.addEventListener('click', playCorrectPronunciation);
+    setLanguageBtn.addEventListener('click', setLanguage);
 
     // --- Core Functions ---
     /**
@@ -41,6 +44,27 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error("Could not fetch new sentence:", error);
             sentenceToDictateEl.textContent = "Error fetching sentence. Please try again.";
+        }
+    }
+
+    async function setLanguage() {
+        const selectedLanguage = languageSelectorEl.value;
+        try {
+            const response = await fetch('/set_language', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ language: selectedLanguage })
+            });
+            if (response.ok) {
+                // Fetch a new sentence in the selected language
+                fetchNewSentence();
+            } else {
+                console.error('Failed to set language');
+            }
+        } catch (error) {
+            console.error('Error setting language:', error);
         }
     }
 
