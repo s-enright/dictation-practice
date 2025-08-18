@@ -1,16 +1,18 @@
 from pathlib import Path
 import torch
-import soundfile
 import librosa
 import uuid
-from transformers import pipeline, SpeechT5Processor, SpeechT5ForTextToSpeech, SpeechT5HifiGan
-from datasets import load_dataset
+from transformers import pipeline
 from .base import Language
+from .tts import TtsManager
+from .utils import ensure_piper_model
 
 class English(Language):
-    def __init__(self, temp_audio_dir: Path):
+    def __init__(self, temp_audio_dir: Path, tts_manager: TtsManager):
         super().__init__()
         self.temp_audio_dir = temp_audio_dir
+        self.tts_manager = tts_manager
+        self.lang_code = 'en'
         self.sentences = [
             'The quick brown fox jumps over the lazy dog.',
             'She sells seashells by the seashore.',
@@ -25,15 +27,12 @@ class English(Language):
         # ASR model
         self.asr_pipeline = pipeline('automatic-speech-recognition', model='openai/whisper-base.en', device=self.device)
         
-        # TTS model
-        self.tts_processor = SpeechT5Processor.from_pretrained('microsoft/speecht5_tts')
-        self.tts_model = SpeechT5ForTextToSpeech.from_pretrained('microsoft/speecht5_tts').to(self.device)
-        self.tts_vocoder = SpeechT5HifiGan.from_pretrained('microsoft/speecht5_hifigan').to(self.device)
-        
-        # Speaker embeddings
-        speaker_id = 7306
-        embeddings_dataset = load_dataset('Matthijs/cmu-arctic-xvectors', split='validation')
-        self.speaker_embeddings = torch.tensor(embeddings_dataset[speaker_id]['xvector']).unsqueeze(0).to(self.device)
+        # Ensure model is downloaded if using Piper
+        if self.tts_manager.tts_engine == 'piper':
+            ensure_piper_model(self.lang_code)
+
+        # TTS model is loaded lazily by the TtsManager
+        self.tts_manager.load_voice(self.lang_code)
         print('English models loaded.')
 
     def transcribe(self, audio_file):
@@ -49,16 +48,4 @@ class English(Language):
                 temp_filename.unlink()
 
     def synthesize(self, text):
-        inputs = self.tts_processor(text=text, return_tensors='pt').to(self.device)
-        
-        with torch.no_grad():
-            speech = self.tts_model.generate_speech(
-                inputs['input_ids'], self.speaker_embeddings, vocoder=self.tts_vocoder
-            )
-        
-        output_filename = f'tts_output_{uuid.uuid4().hex}.wav'
-        output_path = self.temp_audio_dir / output_filename
-        
-        soundfile.write(output_path, speech.cpu().numpy(), samplerate=16000)
-        
-        return str(Path('static', 'temp_audio', output_filename))
+        return self.tts_manager.synthesize(text, self.lang_code)

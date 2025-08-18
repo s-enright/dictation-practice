@@ -1,0 +1,6 @@
+# TTS engine configuration.
+#
+# Options:
+# "piper" - Fast, CPU-friendly, high-quality voice. (Recommended default)
+# "mms"   - Slower, high-quality voice from Meta, requires more resources.
+tts_engine = "piper"

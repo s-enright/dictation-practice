@@ -1,9 +1,14 @@
-from pathlib import Path
 import sys
+import toml
+from pathlib import Path
+import os
+import requests
+
 from flask import Flask, render_template, jsonify, request, session
+
 from languages.english import English
 from languages.vietnamese import Vietnamese
-
+from languages.tts import TtsManager
 
 if sys.version_info[0:2] != (3, 12):
     raise Exception('Requires Python 3.12')
@@ -11,14 +16,26 @@ if sys.version_info[0:2] != (3, 12):
 app = Flask(__name__)
 app.secret_key = 'bun_bo_hue'
 
+# Load configuration
+try:
+    with open('config.toml', 'r') as f:
+        config = toml.load(f)
+    tts_engine = config.get('tts_engine', 'piper')  # Default to piper if not specified
+except FileNotFoundError:
+    print("Warning: config.toml not found. Using default TTS engine 'piper'.")
+    tts_engine = 'piper'
+
 # Temporary directory to hold TTS audio files
 TEMP_AUDIO_DIR = Path(app.static_folder) / 'temp_audio'
 TEMP_AUDIO_DIR.mkdir(exist_ok=True)
 
+# TTS Manager (Singleton)
+tts_manager = TtsManager(tts_engine=tts_engine, temp_audio_dir=TEMP_AUDIO_DIR)
+
 # Language manager
 languages = {
-    'en': English(TEMP_AUDIO_DIR),
-    'vi': Vietnamese(TEMP_AUDIO_DIR)
+    'en': English(TEMP_AUDIO_DIR, tts_manager),
+    'vi': Vietnamese(TEMP_AUDIO_DIR, tts_manager)
 }
 
 def get_language(lang_code):

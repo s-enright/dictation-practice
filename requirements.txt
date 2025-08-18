@@ -1,8 +1,11 @@
-datasets            # Often needed for specific HuggingFace model features or tokenizers
-Flask
-librosa             # For audio processing (like resampling)
-pyaudio             # If you want to test microphone input directly in Python (optional for this app)
-sentencepiece       # text tokenizer
-soundfile           # For reading/writing audio files
-torch
-transformers        # For HuggingFace models
+datasets==2.19.2
+Flask==3.0.3
+librosa==0.10.1
+numpy
+openai-whisper==20231117
+piper-tts
+requests==2.32.3
+soundfile==0.12.1
+toml==0.10.2
+torch==2.3.0
+transformers==4.41.2
