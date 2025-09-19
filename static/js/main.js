@@ -58,8 +58,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({ language: selectedLanguage })
             });
             if (response.ok) {
-                // Fetch a new sentence in the selected language
-                fetchNewSentence();
+                const data = await response.json();
+                // Display the sentence returned from the language change
+                if (data.sentence) {
+                    currentSentence = data.sentence;
+                    sentenceToDictateEl.textContent = currentSentence;
+                    transcriptionOutputEl.value = ''; // Clear previous transcription
+                    playCorrectBtn.disabled = false; // Enable TTS button
+                    audioPlayerEl.classList.add('d-none'); // Hide audio player
+                    audioPlayerEl.src = ''; // Clear previous audio
+                }
+                console.log(data.message); // Log the success message
             } else {
                 console.error('Failed to set language');
             }

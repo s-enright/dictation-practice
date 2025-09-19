@@ -1,8 +1,5 @@
-import sys
 import toml
 from pathlib import Path
-import os
-import requests
 
 from flask import Flask, render_template, jsonify, request, session
 
@@ -10,8 +7,6 @@ from languages.english import English
 from languages.vietnamese import Vietnamese
 from languages.tts import TtsManager
 
-if sys.version_info[0:2] != (3, 12):
-    raise Exception('Requires Python 3.12')
 
 app = Flask(__name__)
 app.secret_key = 'bun_bo_hue'
@@ -54,6 +49,15 @@ def get_sentence():
     language = get_language(lang_code)
     if not language:
         return jsonify({'error': 'Invalid language selected'}), 400
+    
+    # Ensure models are loaded for the selected language
+    if not language.models_loaded:
+        try:
+            language.load_models()
+        except Exception as e:
+            print(f'Error loading models for {lang_code}: {e}')
+            return jsonify({'error': f'Failed to load models for {lang_code}: {str(e)}'}), 500
+    
     sentence = language.get_sentence()
     return jsonify({'sentence': sentence})
 
@@ -106,12 +110,25 @@ def synthesize_speech():
 
 @app.route('/set_language', methods=['POST'])
 def set_language():
-    """Sets the language for the session."""
+    """Sets the language for the session, loads the language models, and returns a random sentence."""
     data = request.get_json()
     lang_code = data.get('language')
     if lang_code in languages:
         session['language'] = lang_code
-        return jsonify({'message': f'Language set to {lang_code}'})
+        
+        # Load models for the selected language
+        language = get_language(lang_code)
+        try:
+            language.load_models()
+            # Get a random sentence for the selected language
+            sentence = language.get_sentence()
+            return jsonify({
+                'message': f'Language set to {lang_code} and models loaded.',
+                'sentence': sentence
+            })
+        except Exception as e:
+            print(f'Error loading models for {lang_code}: {e}')
+            return jsonify({'error': f'Failed to load models for {lang_code}: {str(e)}'}), 500
     return jsonify({'error': 'Invalid language selected'}), 400
 
 if __name__ == '__main__':

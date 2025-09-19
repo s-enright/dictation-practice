@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+import random
 
 class Language(ABC):
     """
@@ -7,7 +8,6 @@ class Language(ABC):
     """
     def __init__(self):
         self.sentences = []
-        self._current_sentence_index = 0
 
     @abstractmethod
     def transcribe(self, audio_data):
@@ -31,10 +31,10 @@ class Language(ABC):
 
     def get_sentence(self):
         """
-        Returns the next sentence for dictation.
+        Returns a random sentence for dictation.
         
         :return: A sentence string.
         """
-        sentence = self.sentences[self._current_sentence_index % len(self.sentences)]
-        self._current_sentence_index += 1
-        return sentence
+        if not self.sentences:
+            return "No sentences available for this language."
+        return random.choice(self.sentences)
