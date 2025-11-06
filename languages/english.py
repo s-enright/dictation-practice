@@ -1,29 +1,38 @@
 from pathlib import Path
-import torch
-import librosa
-import uuid
-from transformers import pipeline
 from .base import Language
 from .tts import TtsManager
+from .asr import AsrManager
 from .utils import ensure_piper_model
 
+
 class English(Language):
-    def __init__(self, temp_audio_dir: Path, tts_manager: TtsManager):
+    """English language implementation with ASR and TTS support."""
+    
+    def __init__(self, temp_audio_dir: Path, tts_manager: TtsManager, asr_manager: AsrManager):
+        """
+        Initialize the English language.
+        
+        Args:
+            temp_audio_dir: Directory for temporary audio files
+            tts_manager: TTS manager instance
+            asr_manager: ASR manager instance
+        """
         super().__init__()
         self.temp_audio_dir = temp_audio_dir
         self.tts_manager = tts_manager
+        self.asr_manager = asr_manager
         self.lang_code = 'en'
         self.sentences = self._load_sentences()
-        
-        self.device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
-        self.asr_pipeline = None  # Will be loaded when language is selected
         self.models_loaded = False
+        
+        # Check if ASR is available for English
+        self._has_asr = self.asr_manager.is_available(self.lang_code)
         
         # Ensure model files are downloaded if using Piper (but don't load yet)
         if self.tts_manager.tts_engine == 'piper':
             ensure_piper_model(self.lang_code)
         
-        print('English language initialized (models will load on selection).')
+        print(f'English language initialized (ASR available: {self._has_asr}, models will load on selection).')
 
     def _load_sentences(self):
         """Load sentences from the English sentences file."""
@@ -49,8 +58,14 @@ class English(Language):
         
         print('Loading English models...')
         
-        # Load ASR model
-        self.asr_pipeline = pipeline('automatic-speech-recognition', model='openai/whisper-base.en', device=self.device)
+        # Load ASR model if available
+        if self._has_asr:
+            try:
+                self.asr_manager.load_model(self.lang_code)
+                print('English ASR model loaded.')
+            except Exception as e:
+                print(f'Warning: Failed to load English ASR model: {e}')
+                self._has_asr = False
         
         # Load TTS model
         self.tts_manager.load_voice(self.lang_code)
@@ -59,19 +74,41 @@ class English(Language):
         print('English models loaded.')
 
     def transcribe(self, audio_file):
-        if not self.models_loaded or self.asr_pipeline is None:
+        """
+        Transcribe audio file to text using ASR.
+        
+        Args:
+            audio_file: Audio file to transcribe
+        
+        Returns:
+            Transcribed text
+        
+        Raises:
+            NotImplementedError: If ASR is not available
+            RuntimeError: If models are not loaded
+        """
+        if not self._has_asr:
+            raise NotImplementedError(
+                "ASR (Automatic Speech Recognition) is not available for English. "
+                "Please check that the required models are installed."
+            )
+        
+        if not self.models_loaded:
             raise RuntimeError("English models not loaded. Call load_models() first.")
         
-        temp_filename = self.temp_audio_dir / f'temp_upload_{uuid.uuid4().hex}.wav'
-        audio_file.save(temp_filename)
-        
-        try:
-            speech_array, _ = librosa.load(temp_filename, sr=16000, mono=True)
-            result = self.asr_pipeline(speech_array)
-            return result['text']
-        finally:
-            if temp_filename.is_file():
-                temp_filename.unlink()
+        return self.asr_manager.transcribe(audio_file, self.lang_code)
 
     def synthesize(self, text):
+        """
+        Synthesize speech from text.
+        
+        Args:
+            text: Text to synthesize
+        
+        Returns:
+            URL path to the synthesized audio file
+        """
+        if not self.models_loaded:
+            raise RuntimeError("English models not loaded. Call load_models() first.")
+        
         return self.tts_manager.synthesize(text, self.lang_code)

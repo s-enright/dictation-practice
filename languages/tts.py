@@ -3,57 +3,47 @@ import torch
 import soundfile
 import wave
 import uuid
-import json
 from transformers import VitsTokenizer, VitsModel
 from piper.voice import PiperVoice
+from .model_config import get_piper_model_path, get_mms_model_name
+
 
 class TtsManager:
-    _instance = None
-
-    def __new__(cls, tts_engine: str, temp_audio_dir: Path):
-        if cls._instance is None:
-            cls._instance = super(TtsManager, cls).__new__(cls)
-            cls._instance.initialized = False
-        return cls._instance
-
+    """
+    Manages TTS models for multiple languages and engines.
+    Uses lazy loading to only load models when needed.
+    """
+    
     def __init__(self, tts_engine: str, temp_audio_dir: Path):
-        if self.initialized:
-            return
+        """
+        Initialize the TTS Manager.
         
+        Args:
+            tts_engine: TTS engine to use ('piper' or 'mms')
+            temp_audio_dir: Directory for temporary audio file storage
+        """
         self.tts_engine = tts_engine
         self.temp_audio_dir = temp_audio_dir
         self.device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
         self.models = {}
-
-        print(f"Initializing TTS Manager with engine: {self.tts_engine}")
-        self.initialized = True
+        print(f"TTS Manager initialized with engine: {self.tts_engine}, device: {self.device}")
 
     def _load_piper_voice(self, lang_code: str):
-        model_name_map = {
-            'en': 'en_US-lessac-medium',
-            'vi': 'vi_VN-25hours_single-low'
-        }
-        model_name = model_name_map.get(lang_code)
-        if not model_name:
-            raise ValueError(f"Piper TTS model not found for language: {lang_code}")
-
-        onnx_path = Path('models') / f'{model_name}.onnx'
-        json_path = Path('models') / f'{model_name}.onnx.json'
+        """Load a Piper TTS voice model."""
+        onnx_path, json_path = get_piper_model_path(lang_code)
 
         if not onnx_path.exists() or not json_path.exists():
-            raise FileNotFoundError(f"Model files for {model_name} not found. Ensure they are downloaded.")
+            raise FileNotFoundError(
+                f"Model files for {lang_code} not found at {onnx_path}. "
+                "Ensure they are downloaded."
+            )
             
         use_cuda = self.device.startswith('cuda')
         return PiperVoice.load(str(onnx_path), config_path=str(json_path), use_cuda=use_cuda)
 
     def _load_mms_voice(self, lang_code: str):
-        model_name_map = {
-            'en': 'facebook/mms-tts-eng',
-            'vi': 'facebook/mms-tts-vie'
-        }
-        model_name = model_name_map.get(lang_code)
-        if not model_name:
-            raise ValueError(f"MMS TTS model not found for language: {lang_code}")
+        """Load an MMS TTS voice model."""
+        model_name = get_mms_model_name(lang_code)
         
         tokenizer = VitsTokenizer.from_pretrained(model_name)
         model = VitsModel.from_pretrained(model_name).to(self.device)
@@ -74,7 +64,16 @@ class TtsManager:
         print(f"{lang_code} model loaded.")
 
     def synthesize(self, text: str, lang_code: str) -> str:
-        """Synthesizes speech and returns the URL to the audio file."""
+        """
+        Synthesize speech and return the URL to the audio file.
+        
+        Args:
+            text: Text to synthesize
+            lang_code: Language code (e.g., 'en', 'vi')
+        
+        Returns:
+            URL path to the synthesized audio file
+        """
         print(f"Synthesizing speech for '{text}'...")
         if lang_code not in self.models:
             self.load_voice(lang_code)
@@ -101,4 +100,33 @@ class TtsManager:
             sampling_rate = mms_model['model'].config.sampling_rate
             soundfile.write(output_path, speech.cpu().numpy().squeeze(), samplerate=sampling_rate)
 
-        return str(Path('static', 'temp_audio', output_filename))
+        # Return URL path using Path for consistency
+        return str(Path('static') / 'temp_audio' / output_filename)
+
+
+# Module-level singleton instance
+_tts_manager_instance = None
+
+
+def get_tts_manager(tts_engine: str = None, temp_audio_dir: Path = None) -> TtsManager:
+    """
+    Get or create the singleton TTS Manager instance.
+    
+    Args:
+        tts_engine: TTS engine to use (required on first call)
+        temp_audio_dir: Directory for temporary audio files (required on first call)
+    
+    Returns:
+        TtsManager instance
+    
+    Raises:
+        ValueError: If required parameters are not provided on first call
+    """
+    global _tts_manager_instance
+    
+    if _tts_manager_instance is None:
+        if tts_engine is None or temp_audio_dir is None:
+            raise ValueError("tts_engine and temp_audio_dir must be provided on first call")
+        _tts_manager_instance = TtsManager(tts_engine, temp_audio_dir)
+    
+    return _tts_manager_instance

@@ -4,3 +4,13 @@
 # "piper" - Fast, CPU-friendly, high-quality voice. (Recommended default)
 # "mms"   - Slower, high-quality voice from Meta, requires more resources.
 tts_engine = "piper"
+
+# ASR (Automatic Speech Recognition) model configuration for Vietnamese.
+#
+# Options:
+# "openai/whisper-small"               - Multilingual Whisper model, good for all dialects (~1GB VRAM)
+# "dragonSwing/wav2vec2-base-vn-270h" - Vietnamese-specific model, lightweight (alternative option)
+#
+# Note: whisper-small is recommended as it provides good accuracy and consistency
+# with the English ASR model while supporting southern Vietnamese dialect.
+vietnamese_asr_model = "openai/whisper-small"

@@ -1,22 +1,22 @@
+"""
+Utility functions for downloading and managing model files.
+"""
 from pathlib import Path
 import requests
+from .model_config import PIPER_MODELS, MODELS_DIR
 
-MODELS_DIR = Path('models')
-PIPER_MODELS = {
-    'en': {
-        'name': 'en_US-lessac-medium',
-        'onnx': 'https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium/en_US-lessac-medium.onnx',
-        'json': 'https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium/en_US-lessac-medium.onnx.json'
-    },
-    'vi': {
-        'name': 'vi_VN-25hours_single-low',
-        'onnx': 'https://huggingface.co/rhasspy/piper-voices/resolve/main/vi/vi_VN/25hours_single/low/vi_VN-25hours_single-low.onnx',
-        'json': 'https://huggingface.co/rhasspy/piper-voices/resolve/main/vi/vi_VN/25hours_single/low/vi_VN-25hours_single-low.onnx.json'
-    }
-}
 
 def download_file(url: str, dest_path: Path):
-    """Downloads a file from a URL to a destination path."""
+    """
+    Download a file from a URL to a destination path.
+    
+    Args:
+        url: URL to download from
+        dest_path: Local path to save the file
+    
+    Raises:
+        requests.exceptions.RequestException: If download fails
+    """
     print(f"Downloading {url} to {dest_path}...")
     try:
         response = requests.get(url, stream=True)
@@ -31,8 +31,15 @@ def download_file(url: str, dest_path: Path):
             dest_path.unlink()
         raise
 
+
 def ensure_piper_model(lang_code: str):
-    """Ensures that the required Piper TTS model for a language is present."""
+    """
+    Ensure that the required Piper TTS model for a language is present.
+    Downloads the model files if they don't exist locally.
+    
+    Args:
+        lang_code: Language code (e.g., 'en', 'vi')
+    """
     if lang_code not in PIPER_MODELS:
         print(f"Warning: No Piper model definition for language '{lang_code}'.")
         return

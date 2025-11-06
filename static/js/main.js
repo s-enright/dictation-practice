@@ -14,12 +14,49 @@ document.addEventListener('DOMContentLoaded', () => {
     let mediaRecorder;
     let audioChunks = [];
     let currentSentence = "";
+    let hasAsrSupport = true; // Track if current language supports ASR
 
     // --- Event Listeners ---
     newSentenceBtn.addEventListener('click', fetchNewSentence);
     recordBtn.addEventListener('click', toggleRecording);
     playCorrectBtn.addEventListener('click', playCorrectPronunciation);
     setLanguageBtn.addEventListener('click', setLanguage);
+
+    // --- Helper Functions ---
+    /**
+     * Update the displayed sentence with new text
+     * @param {string} sentence - The sentence to display
+     */
+    function updateSentenceDisplay(sentence) {
+        currentSentence = sentence;
+        sentenceToDictateEl.textContent = currentSentence;
+    }
+
+    /**
+     * Clear transcription state and reset UI
+     */
+    function clearTranscriptionState() {
+        transcriptionOutputEl.value = '';
+        playCorrectBtn.disabled = false;
+        audioPlayerEl.classList.add('d-none');
+        audioPlayerEl.src = '';
+    }
+
+    /**
+     * Update recording button based on ASR availability
+     * @param {boolean} available - Whether ASR is available
+     */
+    function updateRecordingButtonState(available) {
+        hasAsrSupport = available;
+        recordBtn.disabled = !available;
+        if (!available) {
+            recordBtn.textContent = 'Recording Not Available';
+            recordingStatusEl.textContent = 'Speech recognition not available for this language';
+        } else {
+            recordBtn.textContent = 'Start Recording';
+            recordingStatusEl.textContent = '';
+        }
+    }
 
     // --- Core Functions ---
     /**
@@ -29,18 +66,16 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     async function fetchNewSentence() {
         try {
-            const response = await fetch('/get_sentence'); // Calls the Flask endpoint
+            const response = await fetch('/get_sentence');
             if (!response.ok) {
-                console.log(`HTTP error! Status: ${response.status}`);
+                const errorData = await response.json();
+                console.error(`HTTP error! Status: ${response.status}`, errorData);
+                sentenceToDictateEl.textContent = errorData.error || "Error fetching sentence. Please try again.";
                 return;
             }
             const data = await response.json();
-            currentSentence = data.sentence;
-            sentenceToDictateEl.textContent = currentSentence;
-            transcriptionOutputEl.value = ''; // Clear previous transcription
-            playCorrectBtn.disabled = false; // Enable TTS button
-            audioPlayerEl.classList.add('d-none'); // Hide audio player
-            audioPlayerEl.src = ''; // Clear previous audio
+            updateSentenceDisplay(data.sentence);
+            clearTranscriptionState();
         } catch (error) {
             console.error("Could not fetch new sentence:", error);
             sentenceToDictateEl.textContent = "Error fetching sentence. Please try again.";
@@ -61,23 +96,37 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await response.json();
                 // Display the sentence returned from the language change
                 if (data.sentence) {
-                    currentSentence = data.sentence;
-                    sentenceToDictateEl.textContent = currentSentence;
-                    transcriptionOutputEl.value = ''; // Clear previous transcription
-                    playCorrectBtn.disabled = false; // Enable TTS button
-                    audioPlayerEl.classList.add('d-none'); // Hide audio player
-                    audioPlayerEl.src = ''; // Clear previous audio
+                    updateSentenceDisplay(data.sentence);
+                    clearTranscriptionState();
                 }
-                console.log(data.message); // Log the success message
+                
+                // Update recording button based on ASR availability
+                updateRecordingButtonState(data.has_asr);
+                
+                // Show status message
+                if (data.asr_status) {
+                    console.log(`${data.message} (ASR: ${data.asr_status})`);
+                } else {
+                    console.log(data.message);
+                }
             } else {
-                console.error('Failed to set language');
+                const errorData = await response.json();
+                console.error('Failed to set language:', errorData);
+                alert(`Failed to set language: ${errorData.error || 'Unknown error'}`);
             }
         } catch (error) {
             console.error('Error setting language:', error);
+            alert(`Error setting language: ${error.message}`);
         }
     }
 
     async function toggleRecording() {
+        // Check if ASR is supported before allowing recording
+        if (!hasAsrSupport) {
+            alert('Speech recognition is not available for the selected language. Only text-to-speech is currently supported.');
+            return;
+        }
+
         if (mediaRecorder && mediaRecorder.state === "recording") {
             // Stop recording
             mediaRecorder.stop();
@@ -98,9 +147,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 mediaRecorder.onstop = async () => {
                     const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-                    // type 'audio/ogg; codecs=opus' or 'audio/webm; codecs=opus' might also work
-                    // but wav is often well-supported by ASR backends.
-                    // The backend will handle potential conversion if needed.
 
                     const formData = new FormData();
                     formData.append('audio_data', audioBlob, 'recording.wav');
@@ -110,10 +156,15 @@ document.addEventListener('DOMContentLoaded', () => {
                             method: 'POST',
                             body: formData
                         });
+                        
                         if (!response.ok) {
-                            console.log(`HTTP error! Status: ${response.status}`);
+                            const errorData = await response.json();
+                            console.error(`HTTP error! Status: ${response.status}`, errorData);
+                            transcriptionOutputEl.value = `Error: ${errorData.error || 'Failed to process audio'}`;
+                            recordingStatusEl.textContent = 'Error processing audio.';
                             return;
                         }
+                        
                         const data = await response.json();
                         transcriptionOutputEl.value = data.transcription;
                         recordingStatusEl.textContent = 'Transcription complete!';
@@ -157,9 +208,12 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             if (!response.ok) {
-                console.log(`HTTP error! Status: ${response.status}`);
+                const errorData = await response.json();
+                console.error(`HTTP error! Status: ${response.status}`, errorData);
+                alert(`Could not synthesize speech: ${errorData.error || 'Unknown error'}`);
                 return;
             }
+            
             const data = await response.json();
             audioPlayerEl.src = data.audio_url; // Flask serves this from static/temp_audio
             audioPlayerEl.classList.remove('d-none'); // Show player
