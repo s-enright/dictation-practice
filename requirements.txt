@@ -4,6 +4,7 @@ librosa==0.11.0
 numpy
 openai-whisper==20250625
 piper-tts
+pytest==8.3.4
 requests==2.32.4
 soundfile==0.13.1
 toml==0.10.2

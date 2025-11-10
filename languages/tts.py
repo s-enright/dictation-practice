@@ -74,7 +74,6 @@ class TtsManager:
         Returns:
             URL path to the synthesized audio file
         """
-        print(f"Synthesizing speech for '{text}'...")
         if lang_code not in self.models:
             self.load_voice(lang_code)
 
