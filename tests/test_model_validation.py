@@ -168,7 +168,12 @@ class TestModelValidation:
             
             try:
                 # Step 1: Generate audio using TTS
-                print(f"   Original: {sentence}")
+                # Use encode/decode to handle Vietnamese characters on Windows
+                try:
+                    print(f"   Original: {sentence}")
+                except UnicodeEncodeError:
+                    # Fallback for Windows console that can't display Vietnamese
+                    print(f"   Original: [Vietnamese text - {len(sentence)} chars]")
                 audio_path_url = tts_manager.synthesize(sentence, lang_code)
                 
                 # Convert URL path to actual file path
@@ -192,7 +197,11 @@ class TestModelValidation:
                 audio_file_obj = AudioFile(audio_file_path)
                 transcription = asr_manager.transcribe(audio_file_obj, lang_code)
                 
-                print(f"Transcribed: {transcription.strip()}")
+                # Handle Unicode encoding for Windows console
+                try:
+                    print(f"Transcribed: {transcription.strip()}")
+                except UnicodeEncodeError:
+                    print(f"Transcribed: [Vietnamese text - {len(transcription.strip())} chars]")
                 
                 # Step 3: Calculate match percentage
                 match_percentage = calculate_word_match_percentage(sentence, transcription)

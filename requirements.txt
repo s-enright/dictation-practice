@@ -1,5 +1,6 @@
 datasets==4.0.0
 Flask==3.1.1
+huggingface-hub
 librosa==0.11.0
 numpy
 openai-whisper==20250625
@@ -10,3 +11,9 @@ soundfile==0.13.1
 toml==0.10.2
 torch==2.8.0
 transformers==4.55.2
+
+# Note: VieNeu-TTS (Vietnamese TTS) requires eSpeak NG to be installed on your system
+# Installation instructions: https://github.com/espeak-ng/espeak-ng
+# Windows: Download installer from https://github.com/espeak-ng/espeak-ng/releases
+# Ubuntu/Debian: sudo apt install espeak-ng
+# macOS: brew install espeak

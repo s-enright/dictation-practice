@@ -24,11 +24,23 @@ def config():
     try:
         with open('config.toml', 'r') as f:
             config_data = toml.load(f)
+        
+        # Support per-language TTS engine configuration
+        if 'tts_engine_en' not in config_data and 'tts_engine' in config_data:
+            config_data['tts_engine_en'] = config_data['tts_engine']
+        if 'tts_engine_vi' not in config_data and 'tts_engine' in config_data:
+            config_data['tts_engine_vi'] = config_data['tts_engine']
+        
+        # Set defaults if not present
+        config_data.setdefault('tts_engine_en', 'piper')
+        config_data.setdefault('tts_engine_vi', 'piper')
+        
         return config_data
     except FileNotFoundError:
         # Return default configuration
         return {
-            'tts_engine': 'piper',
+            'tts_engine_en': 'piper',
+            'tts_engine_vi': 'piper',
             'vietnamese_asr_model': 'openai/whisper-small'
         }
 
@@ -64,10 +76,14 @@ def tts_manager(config, temp_audio_dir):
     Returns:
         TtsManager instance
     """
-    tts_engine = config.get('tts_engine', 'piper')
+    # Build per-language engine configuration
+    tts_engines = {
+        'en': config.get('tts_engine_en', 'piper'),
+        'vi': config.get('tts_engine_vi', 'piper')
+    }
     
-    # Create TTS manager
-    manager = TtsManager(tts_engine=tts_engine, temp_audio_dir=temp_audio_dir)
+    # Create TTS manager with per-language configuration
+    manager = TtsManager(temp_audio_dir=temp_audio_dir, tts_engines=tts_engines)
     
     return manager
 

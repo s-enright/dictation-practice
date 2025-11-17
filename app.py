@@ -18,11 +18,22 @@ app.secret_key = 'bun_bo_hue'
 try:
     with open('config.toml', 'r') as f:
         config = toml.load(f)
-    tts_engine = config.get('tts_engine', 'piper')  # Default to piper if not specified
+    
+    # Support per-language TTS engine configuration
+    tts_engine_en = config.get('tts_engine_en', config.get('tts_engine', 'piper'))
+    tts_engine_vi = config.get('tts_engine_vi', config.get('tts_engine', 'piper'))
+    tts_engines = {
+        'en': tts_engine_en,
+        'vi': tts_engine_vi
+    }
+    
     vietnamese_asr_model = config.get('vietnamese_asr_model', 'openai/whisper-small')
 except FileNotFoundError:
     print("Warning: config.toml not found. Using defaults.")
-    tts_engine = 'piper'
+    tts_engines = {
+        'en': 'piper',
+        'vi': 'piper'
+    }
     vietnamese_asr_model = 'openai/whisper-small'
 
 # Apply Vietnamese ASR model configuration
@@ -63,7 +74,7 @@ def cleanup_old_audio_files(max_age_hours=1):
 cleanup_old_audio_files()
 
 # Initialize managers (Singletons)
-tts_manager = get_tts_manager(tts_engine=tts_engine, temp_audio_dir=TEMP_AUDIO_DIR)
+tts_manager = get_tts_manager(temp_audio_dir=TEMP_AUDIO_DIR, tts_engines=tts_engines)
 asr_manager = get_asr_manager(temp_audio_dir=TEMP_AUDIO_DIR)
 
 # Language manager

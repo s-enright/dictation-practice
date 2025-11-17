@@ -1,9 +1,17 @@
 # TTS engine configuration.
 #
-# Options:
-# "piper" - Fast, CPU-friendly, high-quality voice. (Recommended default)
-# "mms"   - Slower, high-quality voice from Meta, requires more resources.
-tts_engine = "piper"
+# Global TTS engine (used as fallback if per-language engines not specified)
+# Options: "piper", "mms", "vieneu-tts"
+#tts_engine = "piper"
+
+# Per-language TTS engine configuration
+# English TTS engine - "piper" recommended for high quality and performance
+tts_engine_en = "piper"
+
+# Vietnamese TTS engine - "vieneu-tts" provides Southern accent support with faster inference
+# Alternative options: "mms", "piper"
+# Note: vieneu-tts requires eSpeak NG to be installed on your system
+tts_engine_vi = "vieneu-tts"
 
 # ASR (Automatic Speech Recognition) model configuration for Vietnamese.
 #

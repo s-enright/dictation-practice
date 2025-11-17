@@ -27,6 +27,17 @@ MMS_TTS_MODELS = {
     'vi': 'facebook/mms-tts-vie'
 }
 
+# VieNeu-TTS Model Configuration (Vietnamese TTS with Southern accent support)
+# Requires eSpeak NG system dependency
+VIENEU_TTS_MODELS = {
+    'vi': {
+        'repo_id': 'pnnbao-ump/VieNeu-TTS',
+        'model_name': 'VieNeu-TTS',
+        'sample_rate': 24000,
+        'requires_espeak': True
+    }
+}
+
 # ASR (Automatic Speech Recognition) Model Configuration
 # Note: Vietnamese model can be overridden via config
 ASR_MODELS = {
@@ -35,7 +46,7 @@ ASR_MODELS = {
         'available': True
     },
     'vi': {
-        'model': 'openai/whisper-small',  # Default: Multilingual Whisper model for Vietnamese
+        'model': 'vinai/PhoWhisper-base',  # PhoWhisper-base: Fine-tuned on 844hrs Vietnamese with Southern accent support
         'available': True
     }
 }
@@ -129,4 +140,22 @@ def is_asr_available(lang_code: str) -> bool:
     if lang_code not in ASR_MODELS:
         return False
     return ASR_MODELS[lang_code]['available']
+
+def get_vieneu_model_info(lang_code: str) -> dict:
+    """
+    Get the VieNeu-TTS model information for a language.
+    
+    Args:
+        lang_code: Language code (e.g., 'vi')
+    
+    Returns:
+        Dictionary containing model configuration
+    
+    Raises:
+        ValueError: If language is not supported for VieNeu-TTS
+    """
+    if lang_code not in VIENEU_TTS_MODELS:
+        raise ValueError(f"VieNeu-TTS model not found for language: {lang_code}")
+    
+    return VIENEU_TTS_MODELS[lang_code]
 
